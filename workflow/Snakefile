@@ -1,0 +1,44 @@
+
+rule create_barcodes:
+    input:
+        singlebams="data/aligned/{SLX}/{sample}.bam"
+    output:
+        "sample_barcodes_{SLX}.tsv"
+    shell:
+        "python makebarc.py"
+
+rule mark_and_merge_bams:
+    input:
+        singlebams="data/aligned/{SLX}/{sample}.bam"
+        samplesheet="sample_barcodes_{SLX}.tsv"
+        refsheet="num_to_chr.tsv"
+    output:
+        "results/merged_bams/{SLX}/{sample}_merged.bam"
+    shell:
+        "sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet"
+    
+rule sort_and_index:
+    input:
+        rules.mark_and_merge_bams.output
+    output:
+        "results/merged_bams/{SLX}/{sample}_merged_sorted.bam"
+        "results/merged_bams/{SLX}/{sample}_merged_sorted.bam.bai"
+    shell:
+        "sbatch sort_and_index.sh"
+
+rule chisel_rdr:
+    input:
+        mergedbam="results/merged_bams/{SLX}/{sample}_merged_sorted.bam"
+        refgenome="/mnt/scratchc/fmlab/pohl01/sprinter/refgenome_data/hsa.GRCh37_g1kp2.fa"
+    output:
+        "results/chisel_rdr/rdr/rdr.tsv"
+    shell:
+        "sbatch chisel_rdr_script.sh"
+
+rule run_sprinter:
+    input:
+        rules.chisel_rdr.output
+    output:
+        "results/sprinter_result/"
+    shell:
+        "sbatch run_sprinter.sh"
