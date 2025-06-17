@@ -1,16 +1,16 @@
 
 rule create_barcodes:
     input:
-        singlebams="data/aligned/{SLX}/{sample}.bam"
+        singlebams="data/aligned/" + str(config["SLX"]) + "/{sample}.bam"
     output:
-        "sample_barcodes_{SLX}.tsv"
+        "sample_barcodes_" + str(config["SLX"]) + ".tsv"
     shell:
-        "python makebarc.py"
+        "python makebarc.py -i {input} -o {output}"
 
 rule mark_and_merge_bams:
     input:
-        singlebams="data/aligned/{SLX}/{sample}.bam"
-        samplesheet="sample_barcodes_{SLX}.tsv"
+        singlebams="data/aligned/" + str(config["SLX"]) + "/{sample}.bam"
+        samplesheet="sample_barcodes_" + str(config["SLX"]) + ".tsv"
         refsheet="num_to_chr.tsv"
     output:
         "results/merged_bams/{SLX}/{sample}_merged.bam"
@@ -28,7 +28,7 @@ rule sort_and_index:
 
 rule chisel_rdr:
     input:
-        mergedbam="results/merged_bams/{SLX}/{sample}_merged_sorted.bam"
+        mergedbam="results/merged_bams/" +str(config["SLX"]) + "/{sample}_merged_sorted.bam"
         refgenome="/mnt/scratchc/fmlab/pohl01/sprinter/refgenome_data/hsa.GRCh37_g1kp2.fa"
     output:
         "results/chisel_rdr/rdr/rdr.tsv"
