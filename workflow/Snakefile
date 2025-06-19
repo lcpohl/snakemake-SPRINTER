@@ -3,7 +3,7 @@ rule create_barcodes:
     input:
         singlebams="data/aligned/" + str(config["SLX"]) + "/{sample}.bam"
     output:
-        "sample_barcodes_" + str(config["SLX"]) + ".tsv"
+        "results/sample_barcodes_" + str(config["SLX"]) + ".tsv"
     shell:
         "python makebarc.py -i {input} -o {output}"
 
@@ -13,18 +13,18 @@ rule mark_and_merge_bams:
         samplesheet="sample_barcodes_" + str(config["SLX"]) + ".tsv"
         refsheet="num_to_chr.tsv"
     output:
-        "results/merged_bams/{SLX}/{sample}_merged.bam"
+        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged.bam"
     shell:
-        "sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet"
+        "sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet -i {input.singlebams} -s {input.samplesheet} -r {input.refsheet}"
     
 rule sort_and_index:
     input:
         rules.mark_and_merge_bams.output
     output:
-        "results/merged_bams/{SLX}/{sample}_merged_sorted.bam"
-        "results/merged_bams/{SLX}/{sample}_merged_sorted.bam.bai"
+        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
+        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam.bai"
     shell:
-        "sbatch sort_and_index.sh"
+        "sbatch sort_and_index.sh {input}"
 
 rule chisel_rdr:
     input:
@@ -33,7 +33,7 @@ rule chisel_rdr:
     output:
         "results/chisel_rdr/rdr/rdr.tsv"
     shell:
-        "sbatch chisel_rdr_script.sh"
+        "sbatch chisel_rdr_script.sh -t {input.merged_bams} -r {input.refgenome}"
 
 rule run_sprinter:
     input:
