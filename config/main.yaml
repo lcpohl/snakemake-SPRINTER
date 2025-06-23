@@ -1,2 +1,2 @@
 SLX: "SLX-23302"
-sample:
+path_ref_genome: "/mnt/scratchc/fmlab/pohl01/sprinter/refgenome_data/hsa.GRCh37_g1kp2.fa"
