@@ -1,3 +1,4 @@
+configfile: "config/main.yaml"
 
 rule create_barcodes:
     input:
@@ -5,7 +6,9 @@ rule create_barcodes:
     output:
         "results/sample_barcodes_" + str(config["SLX"]) + ".tsv"
     shell:
-        "python makebarc.py -i {input} -o {output}"
+        """
+        python makebarc.py -i {input} -o {output}
+        """
 
 rule mark_and_merge_bams:
     input:
@@ -15,30 +18,53 @@ rule mark_and_merge_bams:
     output:
         "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged.bam"
     shell:
-        "sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet -i {input.singlebams} -s {input.samplesheet} -r {input.refsheet}"
+        """
+        sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet \
+        -i {input.singlebams} -s {input.samplesheet} -r {input.refsheet}
+        """
     
 rule sort_and_index:
     input:
         rules.mark_and_merge_bams.output
     output:
-        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
-        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam.bai"
+        bam="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
+        bai="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam.bai"
+    threads:
+        15
     shell:
-        "sbatch sort_and_index.sh {input}"
+        """
+        samtools sort {input} -o {output.bam}
+        samtools index {output.bam} -o {output.bai}
+        """
 
 rule chisel_rdr:
     input:
-        mergedbam="results/merged_bams/" +str(config["SLX"]) + "/{sample}_merged_sorted.bam"
-        refgenome="/mnt/scratchc/fmlab/pohl01/sprinter/refgenome_data/hsa.GRCh37_g1kp2.fa"
+        mergedbam="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
+        refgenome=config["path_ref_genome"]
     output:
-        "results/chisel_rdr/rdr/rdr.tsv"
+        "results/chisel_rdr/" + str(config["SLX"]) + "/"
     shell:
-        "sbatch chisel_rdr_script.sh -t {input.merged_bams} -r {input.refgenome}"
+        """
+        chisel_rdr -t {input.merged_bams} -r {input.refgenome} -b 50000 -m 100000 -j 15
+        """
 
 rule run_sprinter:
     input:
-        rules.chisel_rdr.output
+        "results/chisel_rdr/" + str(config["SLX"]) + "/rdr/rdr.tsv"
+        refgenome=config["path_ref_genome"]
     output:
-        "results/sprinter_result/"
+        tsv="results/chisel_rdr/" + str(config["SLX"]) + "/sprinter_{SLX}.input.tsv.gz"
+        result="results/sprinter_result/" + str(config["SLX"]) + "/"
     shell:
-        "sbatch run_sprinter.sh"
+        """
+        gzip -c {input} > {output.tsv}
+        rm -rf rdr/ baf/ combo/ calls/ clones/ plots/
+
+        sprinter {output.tsv} \
+         --refgenome {input.refgenome} \
+         --minreads 100000 \
+         --rtreads 200 \
+         --cnreads 1000 \
+         --minnumcells 15 \
+         -j 12
+        """
