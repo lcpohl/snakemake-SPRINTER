@@ -1,70 +1,102 @@
 configfile: "config/main.yaml"
 
+rule all:
+    input:
+        expand("results/sprinter_result/{SLX}/",SLX=config["SLX"])
+
 rule create_barcodes:
     input:
-        singlebams="data/aligned/" + str(config["SLX"]) + "/{sample}.bam"
+        singlebams="results/singlebams/{SLX}"
     output:
-        "results/sample_barcodes_" + str(config["SLX"]) + ".tsv"
+        "results/barcode_sheet/sample_barcodes_{SLX}.tsv"
+    conda:
+        "envs/makebarcodes.yaml"
     shell:
         """
-        python makebarc.py -i {input} -o {output}
+        python workflow/scripts/makebarc.py -i {input.singlebams} -o {output}
+        """
+
+rule compile_cpp:
+    input:
+        "workflow/scripts/mark_and_merge.cpp"
+    output:
+        "workflow/scripts/mark_and_merge_bams_samplesheet"
+    conda:
+        "envs/merge.yaml"
+    shell:
+        """
+        g++ -I$CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wall -pedantic -o {output} {input} -lhts -std=c++20 -lstdc++fs -lboost_program_options -Wl,-R$CONDA_PREFIX/lib
         """
 
 rule mark_and_merge_bams:
     input:
-        singlebams="data/aligned/" + str(config["SLX"]) + "/{sample}.bam"
-        samplesheet="sample_barcodes_" + str(config["SLX"]) + ".tsv"
-        refsheet="num_to_chr.tsv"
+        singlebams="results/singlebams/{SLX}", 
+        samplesheet="results/barcode_sheet/sample_barcodes_{SLX}.tsv",
+        tool="workflow/scripts/mark_and_merge_bams_samplesheet"
     output:
-        "results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged.bam"
+        "results/merged_bams/{SLX}/{SLX}_merged.bam"
+    conda:
+        "envs/merge.yaml"
+    params:
+        refsheet="results/ref_sheet/num_to_chr.tsv"
     shell:
         """
-        sbatch /mnt/scratchc/fmlab/kasper01/helper_tools/mark_and_merge_bams_samplesheet \
-        -i {input.singlebams} -s {input.samplesheet} -r {input.refsheet}
+        {input.tool} \
+        -i {input.singlebams} -s {input.samplesheet} -r {params.refsheet} -o {output}
         """
     
 rule sort_and_index:
     input:
-        rules.mark_and_merge_bams.output
+        "results/merged_bams/{SLX}/{SLX}_merged.bam"
     output:
-        bam="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
-        bai="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam.bai"
+        bam="results/merged_bams/{SLX}/{SLX}_merged_sorted.bam",
+        bai="results/merged_bams/{SLX}/{SLX}_merged_sorted.bam.bai"
     threads:
-        15
+        16
+    conda:
+        "envs/chisel.yaml"
     shell:
         """
-        samtools sort {input} -o {output.bam}
-        samtools index {output.bam} -o {output.bai}
+        samtools sort {input} -o {output.bam} -@ {threads}
+        samtools index {output.bam} -o {output.bai} -@ {threads}
         """
 
 rule chisel_rdr:
     input:
-        mergedbam="results/merged_bams/" + str(config["SLX"]) + "/{sample}_merged_sorted.bam"
-        refgenome=config["path_ref_genome"]
+        mergedbam="results/merged_bams/{SLX}/{SLX}_merged_sorted.bam"
     output:
-        "results/chisel_rdr/" + str(config["SLX"]) + "/"
+        directory("results/chisel_rdr/{SLX}/")
+    conda:
+        "envs/chisel.yaml"
+    threads: 16
     shell:
         """
-        chisel_rdr -t {input.merged_bams} -r {input.refgenome} -b 50000 -m 100000 -j 15
+        chisel_rdr -t {input.mergedbam} -r {config[path_ref_genome]} -b 50000 -m 100000 -j {threads}
         """
 
 rule run_sprinter:
     input:
-        "results/chisel_rdr/" + str(config["SLX"]) + "/rdr/rdr.tsv"
-        refgenome=config["path_ref_genome"]
+        rdr_dir = "results/chisel_rdr/{SLX}"
     output:
-        tsv="results/chisel_rdr/" + str(config["SLX"]) + "/sprinter_{SLX}.input.tsv.gz"
-        result="results/sprinter_result/" + str(config["SLX"]) + "/"
+        result=directory("results/sprinter_result/{SLX}/")
+    conda:
+        "envs/sprinter.yaml"
+    params:
+        tsv="results/chisel_rdr/{SLX}/sprinter_{SLX}.input.tsv.gz"
+    threads: 16
     shell:
         """
-        gzip -c {input} > {output.tsv}
-        rm -rf rdr/ baf/ combo/ calls/ clones/ plots/
+        gzip -c {input[0]}/rdr/rdr.tsv > {params.tsv}
 
-        sprinter {output.tsv} \
-         --refgenome {input.refgenome} \
+        sprinter {params.tsv} \
+         --refgenome {config[path_ref_genome]} \
          --minreads 100000 \
          --rtreads 200 \
          --cnreads 1000 \
          --minnumcells 15 \
-         -j 12
+         -j {threads}
+        mkdir {output}
+        mv *png {output}
+        mv *.tsv.gz {output}
+        mv merged_test {output}
         """
