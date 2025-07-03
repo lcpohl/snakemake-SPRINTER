@@ -33,4 +33,4 @@ with open(args.output, 'w', newline='') as tsvfile:
     writer = csv.writer(tsvfile, delimiter='\t', lineterminator='\n')
     writer.writerow(header)
     for bamfile, barcode in zip(bamfiles, barcodes):
-        writer.writerow([bamfile, barcode])
+        writer.writerow([bamfile.name, barcode])
