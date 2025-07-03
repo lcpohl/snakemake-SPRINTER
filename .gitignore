@@ -1,1 +1,4 @@
-.snakemake
+.snakemake/
+singlebams/
+merged_bams/
+barcode_sheet/
