@@ -1,12 +1,1 @@
-#!/bin/bash
-#SBATCH -J run_sprinter
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
-#SBATCH --time=20:00:00
-#SBATCH --mail-user=lara.pohl@cruk.cam.ac.uk
-#SBATCH --mail-type=START,FAIL,END
-#SBATCH -p epyc
-#SBATCH -e /Users/pohl01/logs/err/%x_%J.err
-#SBATCH -o /Users/pohl01/logs/out/%x_%J.out
-
-snakemake --cores 16 --snakefile Snakefile 
+snakemake -p --workflow-profile workflow/profiles/single_cell_WGS --use-conda --profile slurm --rerun-incomplete 
