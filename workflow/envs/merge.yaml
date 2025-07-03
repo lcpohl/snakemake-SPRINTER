@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - htslib=1.21=h566b1c6_1
+  - boost
+  - cxx-compiler

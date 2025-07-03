@@ -1,0 +1,6 @@
+name: sprinter
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - sprinter
