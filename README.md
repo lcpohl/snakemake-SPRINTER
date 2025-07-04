@@ -7,7 +7,7 @@ This snakemake workflow was written to prepare the necessary input for [SPRINTER
 ## Workflow
 1. use **aligned bam files** as input
 2. generate a 16-character long, random, and unique **barcode** made up of `[A, C, T, G]` for each cell
-3. compile the C++ sript `mark_and_merge_bams_samplesheet.cpp` for merging the single bam files, if changes have been made to the script
+3. If changes have been made to the script, compile the C++ sript `mark_and_merge_bams_samplesheet.cpp` for merging the single bam files
 4. use compiled C++ script to **barcode and merge** bam files of individual cells into one bam file and **change chromosome names** to chr1, chr2 etc. to be compatible with [CHISEL](https://github.com/raphael-group/chisel)
 5. `sort` and `index` the merged bam file with samtools
 6. run `chisel_rdr` command to calculate **read depth ratio (RDR)** values and prepare SPRINTER input _.tsv_ file 
