@@ -2,3 +2,8 @@
 singlebams/
 merged_bams/
 barcode_sheet/
+chisel_rdr/
+troubleshooting*
+*.png
+*.tsv.gz
+mark_and_merge.sh
