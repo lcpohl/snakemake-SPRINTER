@@ -1,2 +1,10 @@
-SLX: "SLX-23302"
+SLX: "SLX-22"
 path_ref_genome: "/mnt/scratchc/fmlab/pohl01/sprinter/refgenome_data/hsa.GRCh37_g1kp2.fa"
+ref_sheet: "results/ref_sheet/chr_to_chr.tsv"
+
+chisel_minreads: 100000
+
+sprinter_minreads: 100000
+binsize_rtreads: 200
+binsize_cnreads: 1000
+mincells_clone: 15

@@ -1,8 +1,8 @@
 default-resources: [cpus=1, mem=2G, runtime=600, slurm_partition='rocm', slurm_account='fmlab']
 set-resources:
-    - sort_and_index: mem="32G"
-    - sort_and_index: runtime=1440 
-    - chisel_rdr: mem="32G"
-    - chisel_rdr: runtime=1440
-    - run_sprinter: mem="64G"
-    - run_sprinter: runtime=1440
+    - sort_and_index:mem=32G
+    - sort_and_index:runtime=1440 
+    - chisel_rdr:mem=32G
+    - chisel_rdr:runtime=1440
+    - run_sprinter:mem=64G
+    - run_sprinter:runtime=1440

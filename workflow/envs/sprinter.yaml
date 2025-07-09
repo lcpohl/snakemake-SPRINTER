@@ -4,3 +4,4 @@ channels:
   - bioconda
 dependencies:
   - sprinter
+  - scipy<=1.15.3

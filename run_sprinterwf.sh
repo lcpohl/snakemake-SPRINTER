@@ -1,1 +1,1 @@
-snakemake -p --workflow-profile workflow/profiles/single_cell_WGS --use-conda --profile slurm --rerun-incomplete 
+snakemake -p --workflow-profile workflow/profiles/single_cell_WGS --use-conda --profile slurm --rerun-incomplete --slurm-keep-successful-logs
