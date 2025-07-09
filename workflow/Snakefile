@@ -37,12 +37,10 @@ rule mark_and_merge_bams:
         "results/merged_bams/{SLX}/{SLX}_merged.bam"
     conda:
         "envs/merge.yaml"
-    params:
-        refsheet="results/ref_sheet/num_to_chr.tsv"
     shell:
         """
         {input.tool} \
-        -i {input.singlebams} -s {input.samplesheet} -r {params.refsheet} -o {output}
+        -i {input.singlebams} -s {input.samplesheet} -r {config[ref_sheet]} -o {output} --required_flags 1
         """
     
 rule sort_and_index:
@@ -71,7 +69,11 @@ rule chisel_rdr:
     threads: 16
     shell:
         """
-        chisel_rdr -t {input.mergedbam} -r {config[path_ref_genome]} -b 50000 -m 100000 -j {threads}
+        chisel_rdr -t {input.mergedbam} -r {config[path_ref_genome]} -b 50000 -m {config[chisel_minreads]} -j {threads}
+
+        mkdir {output}
+        mv data/ {output}
+        mv rdr/ {output}
         """
 
 rule run_sprinter:
@@ -90,13 +92,12 @@ rule run_sprinter:
 
         sprinter {params.tsv} \
          --refgenome {config[path_ref_genome]} \
-         --minreads 100000 \
-         --rtreads 200 \
-         --cnreads 1000 \
-         --minnumcells 15 \
+         --minreads {config[sprinter_minreads]} \
+         --rtreads {config[binsize_rtreads]} \
+         --cnreads {config[binsize_cnreads]} \
+         --minnumcells {config[mincells_clone]} \
          -j {threads}
         mkdir {output}
         mv *png {output}
         mv *.tsv.gz {output}
-        mv merged_test {output}
         """

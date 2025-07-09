@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
             ("output,o", po::value<std::string>(&output_file), "Path to output file")
 			("samplesheet,s",po::value<std::string>(&samplesheet), "Path to tsv file matching filenames to barcodes. 1-line header expected, 1st col is name, 2nd is barcode")
 			("refmap,r",po::value<std::string>(&refmap), "Path to a tsv file containing the names of reference sequences to use. Optionally can include a second column containing replacement names, 1-line header expected")
-            ("required_flags",po::value<uint16_t>(&required_flag)->default_value(2),"Only include reads that have all given flags set. Set to 0 to disable, set to 1 to remove requirement for proper pair, set to 2(default) to require reads ion proper pairs")
+            ("required_flags",po::value<uint16_t>(&required_flag)->default_value(2),"Only include reads that have all given flags set. Set to 0 to disable, set to 1 to remove requirement for proper pair, set to 2(default) to require reads in proper pairs")
             ("excluded_flags",po::value<uint16_t>(&exclude_flag)->default_value(2052),"Exclude all mappings with any of the given flags set. 2052(default) removes all unmapped reads and supplementary alignments");
 
         po::variables_map vm;
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
         //create filename regex and buffers
         std::string cell_barcode;
         std::string filename;
-
+        std::cout << "Argparse done\n";
 		//read samplesheet
 		std::unordered_map<std::string,std::string> file_barcodes;
 		std::ifstream samplesheet_handle(samplesheet);
@@ -83,11 +83,13 @@ int main(int argc, char* argv[]) {
 		std::ifstream refnames_handle(refmap);
 		getline(refnames_handle,line);
 		while (getline(refnames_handle,line)){
+            std::cout << "db1 " << line << "\n";
 			delim_loc = line.find('\t');
 			if (delim_loc != std::string::npos){ //two-column case
 				col1 = line.substr(0,delim_loc);
 				col2 = line.substr(delim_loc+1);
 				refnames[col1] = col2;
+                std::cout << col1 <<" / "<<col2<<"\n";
 			} else { //one-column case
 				col1 = line.substr(0);
 				refnames[col1] = col1;
@@ -173,6 +175,7 @@ int main(int argc, char* argv[]) {
 				}
                 while (sam_read1(infile,header,current_record.get()) >= 0){ //loop through all records
                     flag =current_record.get()->core.flag;
+                    std::cout << flag << "\n";
                     if (((flag & exclude_flag)!=0)||((flag & required_flag)!=required_flag)){ //disregard record with flags not matching the requirements
                         continue;
                     }
