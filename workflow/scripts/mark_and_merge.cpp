@@ -175,7 +175,6 @@ int main(int argc, char* argv[]) {
 				}
                 while (sam_read1(infile,header,current_record.get()) >= 0){ //loop through all records
                     flag =current_record.get()->core.flag;
-                    std::cout << flag << "\n";
                     if (((flag & exclude_flag)!=0)||((flag & required_flag)!=required_flag)){ //disregard record with flags not matching the requirements
                         continue;
                     }
@@ -183,7 +182,9 @@ int main(int argc, char* argv[]) {
                     if (tid_map.contains(current_record.get()->core.tid) && tid_map.contains(current_record.get()->core.mtid)) {
 						current_record.get()->core.tid = tid_map[current_record.get()->core.tid];
 						current_record.get()->core.mtid = tid_map[current_record.get()->core.mtid];
-					}
+					} else {
+                        continue;
+                    }
                     //update barcode
                     bam_aux_update_str(current_record.get(),"CB",cell_barcode.size(),cell_barcode.c_str());
                     //write to outfile
